@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DCU Diagnostic Data Message",
+  "type": "object",
+  "required": ["ts", "values"],
+  "properties": {
+    "ts": { "type": "integer" },
+    "values": {
+      "type": "object",
+      "required": ["timestamp", "msg_type", "src", "dst", "diagnostic"],
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "msg_type": { "const": "dcu_diagnostic" },
+        "src": { "$ref": "#/definitions/deviceInfo" },
+        "dst": { "$ref": "#/definitions/deviceInfo" },
+        "diagnostic": {
+          "type": "object",
+          "properties": {
+            "system_metrics": { "type": "string" },
+            "battery_monitor": {
+              "type": "object",
+              "properties": {
+                "charge": { "type": "integer", "minimum": 0, "maximum": 100 }
+              },
+              "required": ["charge"]
+            },
+            "reset_reason": { "type": "string" },
+            "network_status": { "type": "string" },
+            "reset_event_count": { "type": "string" },
+            "mqtt_status": {
+              "type": "object",
+              "properties": {
+                "connection": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["connected"] }
+                  },
+                  "required": ["status"]
+                },
+                "publishing": {
+                  "type": "object",
+                  "properties": {
+                    "qos": { "type": "integer", "enum": [0,1,2] },
+                    "publish_interval_ms": { "type": "integer", "minimum": 0 }
+                  },
+                  "required": ["qos", "publish_interval_ms"]
+                }
+              },
+              "required": ["connection", "publishing"]
+            }
+          },
+          "required": ["system_metrics", "reset_reason", "network_status", "reset_event_count", "mqtt_status"]
+        }
+      }
+    }
+  },
+  "definitions": {
+    "deviceInfo": {
+      "type": "object",
+      "required": [
+        "ipv6",
+        "mac",
+        "device_type"
+      ],
+      "properties": {
+        "ipv6": {
+          "type": "string",
+          "format": "ipv6"
+        },
+        "mac": {
+          "type": "string",
+          "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+        },
+        "device_type": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+[Unit]
+Description=PHYSoftware DCU Gateway Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/PHY/PHYSOFTWARE_DCU_GATEWAY
+WorkingDirectory=/usr/local/bin/PHY
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
