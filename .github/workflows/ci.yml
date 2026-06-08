@@ -26,8 +26,8 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential make gcc cppcheck clang-format libjansson-dev libpaho-mqtt-dev
+          apt-get update
+          apt-get install -y build-essential make gcc cppcheck clang-format libjansson-dev libpaho-mqtt-dev
 
       # - name: Check code formatting
       #   working-directory: Gateway_plugin
