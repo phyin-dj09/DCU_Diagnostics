@@ -27,7 +27,28 @@ jobs:
       - name: Install build dependencies
         run: |
           apt-get update
-          apt-get install -y build-essential make gcc cppcheck clang-format libjansson-dev libpaho-mqtt-dev
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            make \
+            gcc \
+            git \
+            cmake \
+            cppcheck \
+            clang-format \
+            libjansson-dev
+
+      - name: Build and install Paho MQTT C
+        run: |
+          git clone https://github.com/eclipse-paho/paho.mqtt.c.git
+          cd paho.mqtt.c
+          git checkout v1.3.13
+          cmake -Bbuild -H. \
+            -DPAHO_WITH_SSL=FALSE \
+            -DPAHO_BUILD_STATIC=FALSE \
+            -DPAHO_BUILD_SHARED=TRUE
+          cmake --build build
+          cmake --install build
+          ldconfig
 
       # - name: Check code formatting
       #   working-directory: Gateway_plugin
