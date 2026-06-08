@@ -1,0 +1,52 @@
+name: CI - Build and Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build and Test C Project
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential make gcc cppcheck clang-format
+
+      - name: Check code formatting
+        run: |
+          find src include -name "*.c" -o -name "*.h" | xargs clang-format --dry-run --Werror
+
+      - name: Static analysis
+        run: |
+          cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src include
+
+      - name: Clean build
+        run: make clean
+
+      - name: Compile
+        run: make
+
+      # - name: Run tests
+      #   run: make test
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: c-app-${{ github.sha }}
+          path: |
+            build/*
