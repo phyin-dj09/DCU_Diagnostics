@@ -28,17 +28,26 @@ jobs:
           sudo apt-get install -y build-essential make gcc cppcheck clang-format
 
       - name: Check code formatting
+        working-directory: Gateway_plugin
         run: |
-          find src include -name "*.c" -o -name "*.h" | xargs clang-format --dry-run --Werror
+          find . \( -name "*.c" -o -name "*.h" \) -print | xargs clang-format --dry-run --Werror
 
       - name: Static analysis
+        working-directory: Gateway_plugin
         run: |
-          cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src include
+          cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem \
+            src \
+            physoftware/dcu_diagnostics/src \
+            physoftware/dcu_diagnostics/include \
+            physoftware/Gateway-commissioning/src \
+            physoftware/Gateway-commissioning/include
 
       - name: Clean build
+        working-directory: Gateway_plugin
         run: make clean
 
       - name: Compile
+        working-directory: Gateway_plugin
         run: make
 
       # - name: Run tests
