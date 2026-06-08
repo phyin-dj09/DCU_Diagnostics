@@ -1,0 +1,55 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, example v1.0.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Download release package
+        run: |
+          wget https://github.com/${{ github.repository }}/releases/download/${{ inputs.version }}/c-app-${{ inputs.version }}.tar.gz
+
+      - name: Deploy to staging server
+        run: |
+          echo "${{ secrets.STAGING_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+          scp -i key.pem -o StrictHostKeyChecking=no c-app-${{ inputs.version }}.tar.gz ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:/tmp/
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
+            mkdir -p /opt/my_app &&
+            tar -xzf /tmp/c-app-${{ inputs.version }}.tar.gz -C /opt/my_app --strip-components=1 &&
+            chmod +x /opt/my_app/my_app
+          "
+
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Download release package
+        run: |
+          wget https://github.com/${{ github.repository }}/releases/download/${{ inputs.version }}/c-app-${{ inputs.version }}.tar.gz
+
+      - name: Deploy to production server
+        run: |
+          echo "${{ secrets.PROD_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+          scp -i key.pem -o StrictHostKeyChecking=no c-app-${{ inputs.version }}.tar.gz ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }}:/tmp/
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} "
+            mkdir -p /opt/my_app &&
+            tar -xzf /tmp/c-app-${{ inputs.version }}.tar.gz -C /opt/my_app --strip-components=1 &&
+            chmod +x /opt/my_app/my_app
+          "
