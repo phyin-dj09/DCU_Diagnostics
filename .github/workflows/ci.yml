@@ -58,4 +58,11 @@ jobs:
         with:
           name: c-app-${{ github.sha }}
           path: |
-            build/*
+            Gateway_plugin/*
+
+      - name: Show generated files
+        working-directory: Gateway_plugin
+        run: |
+          pwd
+          ls -lah
+          find . -type f
