@@ -35,7 +35,6 @@ pipeline {
                 echo 'Checking generated binary...'
                 sh '''
                     ls -lh Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY
-                    file Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY
                 '''
             }
         }
