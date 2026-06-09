@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'ubuntu:20.04'
+            args '-u root'
+        }
+    }
 
     stages {
         stage('Checkout') {
