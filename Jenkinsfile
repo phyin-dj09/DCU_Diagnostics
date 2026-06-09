@@ -74,6 +74,26 @@ pipeline {
                 archiveArtifacts artifacts: 'Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY', fingerprint: true
             }
         }
+        
+        stage('Publish to Local Artifact Directory') {
+        steps {
+            sh '''
+                ARTIFACT_DIR=/artifacts/DCU_Diagnostics/latest
+    
+                mkdir -p ${ARTIFACT_DIR}
+    
+                cp Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY ${ARTIFACT_DIR}/
+                chmod +x ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY
+    
+                sha256sum ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY > ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY.sha256
+    
+                echo "${BUILD_NUMBER}" > ${ARTIFACT_DIR}/build_number.txt
+                date > ${ARTIFACT_DIR}/build_time.txt
+    
+                ls -lh ${ARTIFACT_DIR}
+            '''
+            }
+        }
     }
 
     post {
