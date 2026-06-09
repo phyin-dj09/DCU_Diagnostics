@@ -13,8 +13,8 @@ pipeline {
             steps {
                 echo 'Installing required build dependencies...'
                 sh '''
-                    sudo apt-get update
-                    sudo apt-get install -y gcc make libjansson-dev libpaho-mqtt-dev
+                    apt-get update
+                    apt-get install -y gcc make libjansson-dev libpaho-mqtt-dev
                 '''
             }
         }
