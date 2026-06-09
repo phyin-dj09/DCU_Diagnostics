@@ -7,26 +7,46 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Checking out source code...'
-                checkout scm
+                sh '''
+                    apt-get update
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                        gcc \
+                        make \
+                        cmake \
+                        git \
+                        libssl-dev \
+                        libjansson-dev
+                '''
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Build and Install Paho MQTT C') {
             steps {
-                echo 'Installing required build dependencies...'
                 sh '''
-                    apt-get update
-                    apt-get install -y gcc make libjansson-dev libpaho-mqtt-dev
+                    rm -rf /tmp/paho.mqtt.c
+                    git clone https://github.com/eclipse-paho/paho.mqtt.c.git /tmp/paho.mqtt.c
+
+                    cd /tmp/paho.mqtt.c
+                    git checkout v1.3.14
+
+                    cmake -Bbuild -H. \
+                        -DPAHO_WITH_SSL=TRUE \
+                        -DPAHO_BUILD_SHARED=TRUE \
+                        -DPAHO_BUILD_STATIC=FALSE \
+                        -DPAHO_ENABLE_TESTING=FALSE
+
+                    cmake --build build
+                    cmake --install build
+
+                    ldconfig
                 '''
             }
         }
 
         stage('Build Gateway Plugin') {
             steps {
-                echo 'Building project using Makefile...'
                 sh '''
                     cd Gateway_plugin
                     make clean
@@ -37,16 +57,15 @@ pipeline {
 
         stage('Verify Binary') {
             steps {
-                echo 'Checking generated binary...'
                 sh '''
                     ls -lh Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY
+                    ldd Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY
                 '''
             }
         }
 
         stage('Archive Artifact') {
             steps {
-                echo 'Saving build output in Jenkins...'
                 archiveArtifacts artifacts: 'Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY', fingerprint: true
             }
         }
@@ -54,7 +73,7 @@ pipeline {
 
     post {
         success {
-            echo 'Build completed successfully.'
+            echo 'Build completed successfully for Ubuntu 20.04.'
         }
 
         failure {
