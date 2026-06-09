@@ -1,6 +1,7 @@
 pipeline {
     agent {
         docker {
+            label 'dcu-diagnostics'
             image 'ubuntu:20.04'
             args '-u root'
         }
@@ -74,6 +75,15 @@ pipeline {
                 archiveArtifacts artifacts: 'Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY', fingerprint: true
             }
         }
+
+        stage('Agent Check') {
+        steps {
+            sh '''
+                hostname
+                whoami
+            '''
+            }
+        }    
         
         stage('Publish to Local Artifact Directory') {
         steps {
