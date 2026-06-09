@@ -85,7 +85,8 @@ pipeline {
                 cp Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY ${ARTIFACT_DIR}/
                 chmod +x ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY
     
-                sha256sum ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY > ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY.sha256
+                cd ${ARTIFACT_DIR}
+                sha256sum PHYSOFTWARE_DCU_GATEWAY > PHYSOFTWARE_DCU_GATEWAY.sha256
     
                 echo "${BUILD_NUMBER}" > ${ARTIFACT_DIR}/build_number.txt
                 date > ${ARTIFACT_DIR}/build_time.txt
