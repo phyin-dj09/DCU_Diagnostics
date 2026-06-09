@@ -23,25 +23,30 @@ pipeline {
         }
 
         stage('Build and Install Paho MQTT C') {
-            steps {
-                sh '''
+        steps {
+            sh '''
+                rm -rf /tmp/paho.mqtt.c
+    
+                for i in 1 2 3; do
+                    git clone --depth 1 --branch v1.3.14 https://github.com/eclipse-paho/paho.mqtt.c.git /tmp/paho.mqtt.c && break
+                    echo "Git clone failed. Retrying..."
                     rm -rf /tmp/paho.mqtt.c
-                    git clone https://github.com/eclipse-paho/paho.mqtt.c.git /tmp/paho.mqtt.c
-
-                    cd /tmp/paho.mqtt.c
-                    git checkout v1.3.14
-
-                    cmake -Bbuild -H. \
-                        -DPAHO_WITH_SSL=TRUE \
-                        -DPAHO_BUILD_SHARED=TRUE \
-                        -DPAHO_BUILD_STATIC=FALSE \
-                        -DPAHO_ENABLE_TESTING=FALSE
-
-                    cmake --build build
-                    cmake --install build
-
-                    ldconfig
-                '''
+                    sleep 5
+                done
+    
+                cd /tmp/paho.mqtt.c
+    
+                cmake -B build -S . \
+                    -DPAHO_WITH_SSL=TRUE \
+                    -DPAHO_BUILD_SHARED=TRUE \
+                    -DPAHO_BUILD_STATIC=FALSE \
+                    -DPAHO_ENABLE_TESTING=FALSE
+    
+                cmake --build build
+                cmake --install build
+    
+                ldconfig
+            '''
             }
         }
 
