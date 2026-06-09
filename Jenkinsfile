@@ -3,7 +3,7 @@ pipeline {
         docker {
             label 'dcu-diagnostics'
             image 'ubuntu:20.04'
-            args '-u root'
+            args '-u root -v /mnt/cicd-artifacts:/artifacts'
         }
     }
 
