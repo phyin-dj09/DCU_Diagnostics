@@ -87,71 +87,99 @@ pipeline {
         }
 
         stage('Local AI Code and Security Review') {
-            steps {
-                sh '''
-            cat > /tmp/ai_review.py <<'PY'
-            import json
-            import urllib.request
-            
-            OLLAMA_URL = "http://192.168.11.129:11434/api/generate"
-            MODEL = "qwen2.5-coder:7b"
-            
-            def read_file(path):
-                try:
-                    with open(path, "r", errors="ignore") as f:
-                        return f.read()
-                except FileNotFoundError:
-                    return ""
-            
-            cppcheck = read_file("reports/cppcheck-report.txt")
-            security = read_file("reports/security-patterns.txt")
-            
-            prompt = f"""
-            You are reviewing a C project built in Jenkins.
-            
-            Project: DCU_Diagnostics / Gateway_plugin
-            
-            Review the following static-analysis and security scan results.
-            
-            Tasks:
-            1. Summarize the most important code/security issues.
-            2. Classify each issue as Critical, High, Medium, Low, or Info.
-            3. Explain why it matters.
-            4. Suggest exact developer action.
-            5. Do not invent issues not present in the report.
-            
-            Cppcheck report:
-            {cppcheck[:12000]}
-            
-            Security pattern scan:
-            {security[:12000]}
-            """
-            
-            payload = {
-                "model": MODEL,
-                "prompt": prompt,
-                "stream": False
-            }
-            
+        steps {
+            sh '''
+        mkdir -p reports
+        
+        cat > ai_review.py <<'PY'
+        import json
+        import urllib.request
+        
+        OLLAMA_URL = "http://192.168.11.129:11434/api/generate"
+        MODEL = "qwen2.5-coder:7b"
+        
+        def read_file(path):
+            try:
+                with open(path, "r", errors="ignore") as f:
+                    return f.read()
+            except Exception:
+                return ""
+        
+        cppcheck = read_file("reports/cppcheck-report.txt")
+        security = read_file("reports/security-patterns.txt")
+        
+        prompt = f"""
+        You are a senior embedded Linux C security reviewer.
+        
+        Create a professional Markdown report.
+        
+        Project: DCU_Diagnostics / Gateway_plugin
+        
+        Report Sections:
+        1. Executive Summary
+        2. High Priority Issues
+        3. Medium Priority Issues
+        4. Low Priority Issues
+        5. File-wise Findings
+        6. Recommended Fixes
+        7. Developer Action Items
+        8. Build Decision
+        
+        Do not invent issues.
+        Only use the scan results below.
+        
+        Cppcheck Report:
+        {cppcheck[:12000]}
+        
+        Security Scan:
+        {security[:12000]}
+        """
+        
+        payload = {
+            "model": MODEL,
+            "prompt": prompt,
+            "stream": False
+        }
+        
+        output = ""
+        
+        try:
             req = urllib.request.Request(
                 OLLAMA_URL,
                 data=json.dumps(payload).encode("utf-8"),
                 headers={"Content-Type": "application/json"}
             )
-            
+        
             with urllib.request.urlopen(req, timeout=300) as response:
                 result = json.loads(response.read().decode("utf-8"))
-            
-            with open("reports/ai-code-security-review.md", "w") as f:
-                f.write(result.get("response", ""))
-            
-            print(result.get("response", ""))
-            PY
-            
-            mkdir -p reports
-            python3 /tmp/ai_review.py
-            ls -ls reports
-                    '''
+        
+            output = result.get("response", "")
+        
+        except Exception as e:
+            output = f"""
+        # AI Code and Security Review Report
+        
+        ## AI Review Failed
+        
+        Error:
+        
+        {e}
+        """
+        
+        with open("reports/ai-code-security-review.md", "w") as f:
+            f.write(output)
+        
+        print(output)
+        PY
+        
+        python3 ai_review.py
+        
+        echo "===== REPORT FILES ====="
+        ls -lh reports
+        
+        echo "===== AI REPORT ====="
+        cat reports/ai-code-security-review.md || true
+                '''
             }
         }
 
