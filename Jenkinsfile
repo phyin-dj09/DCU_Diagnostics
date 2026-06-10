@@ -89,9 +89,7 @@ pipeline {
         stage('Local AI Code and Security Review') {
         steps {
             sh '''
-                mkdir -p reports
-    
-                python3 << 'PY'
+        cat > /tmp/ai_review.py <<'PY'
         import json
         import urllib.request
         
@@ -149,6 +147,9 @@ pipeline {
         
         print(result.get("response", ""))
         PY
+        
+        mkdir -p reports
+        python3 /tmp/ai_review.py
                 '''
             }
         }
