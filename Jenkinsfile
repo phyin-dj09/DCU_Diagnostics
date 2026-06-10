@@ -198,8 +198,14 @@ pipeline {
         steps {
             sh '''
                 ARTIFACT_DIR=/artifacts/DCU_Diagnostics/latest
+                REPORT_DIR=${ARTIFACT_DIR}/reports
     
                 mkdir -p ${ARTIFACT_DIR}
+                mkdir -p ${REPORT_DIR}
+
+                if [ -d reports ]; then
+                    cp -r reports/* ${REPORT_DIR}/
+                fi
     
                 cp Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY ${ARTIFACT_DIR}/
                 chmod +x ${ARTIFACT_DIR}/PHYSOFTWARE_DCU_GATEWAY
@@ -211,6 +217,7 @@ pipeline {
                 date > ${ARTIFACT_DIR}/build_time.txt
     
                 ls -lh ${ARTIFACT_DIR}
+                ls -lh ${REPORT_DIR}
             '''
             }
         }
