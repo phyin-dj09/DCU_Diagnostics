@@ -229,8 +229,8 @@ pipeline {
                 echo "Published reports directory:"
                 ls -lh ${REPORT_DIR}
             '''
+            }
         }
-    }
 
     post {
         success {
