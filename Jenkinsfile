@@ -201,10 +201,17 @@ pipeline {
                 REPORT_DIR=${ARTIFACT_DIR}/reports
     
                 mkdir -p ${ARTIFACT_DIR}
+    
+                echo "Workspace reports before publishing:"
+                ls -lh reports || true
+    
+                rm -rf ${REPORT_DIR}
                 mkdir -p ${REPORT_DIR}
-
+    
                 if [ -d reports ]; then
-                    cp -r reports/* ${REPORT_DIR}/
+                    cp -av reports/. ${REPORT_DIR}/
+                else
+                    echo "No reports directory found"
                 fi
     
                 cp Gateway_plugin/PHYSOFTWARE_DCU_GATEWAY ${ARTIFACT_DIR}/
@@ -213,13 +220,15 @@ pipeline {
                 cd ${ARTIFACT_DIR}
                 sha256sum PHYSOFTWARE_DCU_GATEWAY > PHYSOFTWARE_DCU_GATEWAY.sha256
     
-                echo "${BUILD_NUMBER}" > ${ARTIFACT_DIR}/build_number.txt
-                date > ${ARTIFACT_DIR}/build_time.txt
+                echo "${BUILD_NUMBER}" > build_number.txt
+                date > build_time.txt
     
+                echo "Published artifact directory:"
                 ls -lh ${ARTIFACT_DIR}
+    
+                echo "Published reports directory:"
                 ls -lh ${REPORT_DIR}
             '''
-            }
         }
     }
 
