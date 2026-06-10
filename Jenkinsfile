@@ -232,6 +232,7 @@ pipeline {
             '''
             }
         }
+    }
 
     post {
         success {
