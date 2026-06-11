@@ -116,16 +116,20 @@ def read_file(path):
 
 
 def failure_report(message):
-    return (
-        "# AI Code and Security Review Report\n\n"
-        "## AI Review Failed\n\n"
-        f"Model: `{MODEL}`\n\n"
-        f"Endpoint: `{OLLAMA_URL}`\n\n"
-        "Error:\n\n"
-        "```text\n"
-        f"{message}\n"
-        "```\n"
-    )
+    return f"""# AI Code and Security Review Report
+
+## AI Review Failed
+
+Model: `{MODEL}`
+
+Endpoint: `{OLLAMA_URL}`
+
+Error:
+
+```text
+{message}
+```
+"""
 
 
 def build_prompt(cppcheck, security):
@@ -180,7 +184,7 @@ def run_review():
     if not output:
         return failure_report("The Ollama API returned an empty response.")
 
-    return output + "\n"
+    return output + chr(10)
 
 
 os.makedirs("reports", exist_ok=True)
