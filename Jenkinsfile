@@ -88,120 +88,120 @@ pipeline {
 
         stage('Local AI Code and Security Review') {
             steps {
-                sh(script: '''
+                sh '''
                     mkdir -p reports
 
                     echo "===== RUNNING AI REVIEW ====="
                     python3 - <<'PY'
-                    import json
-                    import os
-                    import urllib.request
+import json
+import os
+import urllib.request
 
 
-                    OLLAMA_URL = os.environ.get(
-                        "OLLAMA_URL",
-                        "http://192.168.11.129:11434/api/generate",
-                    )
-                    MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
-                    REPORT_PATH = "reports/ai-code-security-review.md"
-                    TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "300"))
+OLLAMA_URL = os.environ.get(
+    "OLLAMA_URL",
+    "http://192.168.11.129:11434/api/generate",
+)
+MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
+REPORT_PATH = "reports/ai-code-security-review.md"
+TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "300"))
 
 
-                    def read_file(path):
-                        try:
-                            with open(path, "r", encoding="utf-8", errors="ignore") as handle:
-                                return handle.read()
-                        except OSError:
-                            return ""
+def read_file(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+            return handle.read()
+    except OSError:
+        return ""
 
 
-                    def failure_report(message):
-                        return (
-                            "# AI Code and Security Review Report\\n\\n"
-                            "## AI Review Failed\\n\\n"
-                            f"Model: `{MODEL}`\\n\\n"
-                            f"Endpoint: `{OLLAMA_URL}`\\n\\n"
-                            "Error:\\n\\n"
-                            "```text\\n"
-                            f"{message}\\n"
-                            "```\\n"
-                        )
+def failure_report(message):
+    return (
+        "# AI Code and Security Review Report\n\n"
+        "## AI Review Failed\n\n"
+        f"Model: `{MODEL}`\n\n"
+        f"Endpoint: `{OLLAMA_URL}`\n\n"
+        "Error:\n\n"
+        "```text\n"
+        f"{message}\n"
+        "```\n"
+    )
 
 
-                    def build_prompt(cppcheck, security):
-                        return f"""
-                    You are a senior embedded Linux C security reviewer.
+def build_prompt(cppcheck, security):
+    return f"""
+You are a senior embedded Linux C security reviewer.
 
-                    Create a professional Markdown report.
+Create a professional Markdown report.
 
-                    Project: DCU_Diagnostics / Gateway_plugin
+Project: DCU_Diagnostics / Gateway_plugin
 
-                    Report Sections:
-                    1. Executive Summary
-                    2. High Priority Issues
-                    3. Medium Priority Issues
-                    4. Low Priority Issues
-                    5. File-wise Findings
-                    6. Recommended Fixes
-                    7. Developer Action Items
-                    8. Build Decision
+Report Sections:
+1. Executive Summary
+2. High Priority Issues
+3. Medium Priority Issues
+4. Low Priority Issues
+5. File-wise Findings
+6. Recommended Fixes
+7. Developer Action Items
+8. Build Decision
 
-                    Do not invent issues.
-                    Only use the scan results below.
+Do not invent issues.
+Only use the scan results below.
 
-                    Cppcheck Report:
-                    {cppcheck[:12000]}
+Cppcheck Report:
+{cppcheck[:12000]}
 
-                    Security Scan:
-                    {security[:12000]}
-                    """
-
-
-                    def run_review():
-                        cppcheck = read_file("reports/cppcheck-report.txt")
-                        security = read_file("reports/security-patterns.txt")
-
-                        payload = {
-                            "model": MODEL,
-                            "prompt": build_prompt(cppcheck, security),
-                            "stream": False,
-                        }
-
-                        req = urllib.request.Request(
-                            OLLAMA_URL,
-                            data=json.dumps(payload).encode("utf-8"),
-                            headers={"Content-Type": "application/json"},
-                        )
-
-                        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:
-                            result = json.loads(response.read().decode("utf-8"))
-
-                        output = result.get("response", "").strip()
-                        if not output:
-                            return failure_report("The Ollama API returned an empty response.")
-
-                        return output + "\\n"
+Security Scan:
+{security[:12000]}
+"""
 
 
-                    os.makedirs("reports", exist_ok=True)
+def run_review():
+    cppcheck = read_file("reports/cppcheck-report.txt")
+    security = read_file("reports/security-patterns.txt")
 
-                    try:
-                        output = run_review()
-                    except Exception as exc:
-                        output = failure_report(str(exc))
+    payload = {
+        "model": MODEL,
+        "prompt": build_prompt(cppcheck, security),
+        "stream": False,
+    }
 
-                    with open(REPORT_PATH, "w", encoding="utf-8") as handle:
-                        handle.write(output)
+    req = urllib.request.Request(
+        OLLAMA_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
 
-                    print(output)
-                    PY
+    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:
+        result = json.loads(response.read().decode("utf-8"))
+
+    output = result.get("response", "").strip()
+    if not output:
+        return failure_report("The Ollama API returned an empty response.")
+
+    return output + "\n"
+
+
+os.makedirs("reports", exist_ok=True)
+
+try:
+    output = run_review()
+except Exception as exc:
+    output = failure_report(str(exc))
+
+with open(REPORT_PATH, "w", encoding="utf-8") as handle:
+    handle.write(output)
+
+print(output)
+PY
 
                     echo "===== REPORT FILES ====="
                     ls -lh reports
 
                     echo "===== AI REPORT ====="
                     cat reports/ai-code-security-review.md
-                '''.stripIndent())
+                '''
             }
         }
 
