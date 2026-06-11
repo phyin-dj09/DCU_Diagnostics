@@ -138,6 +138,17 @@ You are a senior embedded Linux C security reviewer.
 
 Create a professional Markdown report.
 
+IMPORTANT RULES:
+- Do not invent people names.
+- Do not invent company names.
+- Do not invent authors.
+- Do not invent report signatures.
+- Do not add 'Prepared By'.
+- Do not add consultant names.
+- Do not add cloud vendor names.
+- Only use information present in the scan results.
+- If information is unavailable, write "Not Available".
+
 Project: DCU_Diagnostics / Gateway_plugin
 
 Report Sections:
