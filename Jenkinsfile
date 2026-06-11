@@ -88,35 +88,54 @@ pipeline {
 
         stage('Local AI Code and Security Review') {
             steps {
-                sh '''
+                sh(script: '''
                     mkdir -p reports
-                    cat > ai_review.py <<'PY'
+
+                    echo "===== RUNNING AI REVIEW ====="
+                    python3 - <<'PY'
                     import json
-                    import urllib.request
                     import os
-                    
-                    OLLAMA_URL = "http://192.168.11.129:11434/api/generate"
-                    MODEL = "qwen2.5-coder:7b"
-                    
-                    os.makedirs("reports", exist_ok=True)
-                    
+                    import urllib.request
+
+
+                    OLLAMA_URL = os.environ.get(
+                        "OLLAMA_URL",
+                        "http://192.168.11.129:11434/api/generate",
+                    )
+                    MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
+                    REPORT_PATH = "reports/ai-code-security-review.md"
+                    TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "300"))
+
+
                     def read_file(path):
                         try:
-                            with open(path, "r", errors="ignore") as f:
-                                return f.read()
-                        except Exception:
+                            with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+                                return handle.read()
+                        except OSError:
                             return ""
-                    
-                    cppcheck = read_file("reports/cppcheck-report.txt")
-                    security = read_file("reports/security-patterns.txt")
-                    
-                    prompt = """
+
+
+                    def failure_report(message):
+                        return (
+                            "# AI Code and Security Review Report\\n\\n"
+                            "## AI Review Failed\\n\\n"
+                            f"Model: `{MODEL}`\\n\\n"
+                            f"Endpoint: `{OLLAMA_URL}`\\n\\n"
+                            "Error:\\n\\n"
+                            "```text\\n"
+                            f"{message}\\n"
+                            "```\\n"
+                        )
+
+
+                    def build_prompt(cppcheck, security):
+                        return f"""
                     You are a senior embedded Linux C security reviewer.
-                    
+
                     Create a professional Markdown report.
-                    
+
                     Project: DCU_Diagnostics / Gateway_plugin
-                    
+
                     Report Sections:
                     1. Executive Summary
                     2. High Priority Issues
@@ -126,53 +145,63 @@ pipeline {
                     6. Recommended Fixes
                     7. Developer Action Items
                     8. Build Decision
-                    
+
                     Do not invent issues.
                     Only use the scan results below.
-                    
+
                     Cppcheck Report:
-                    %s
-                    
+                    {cppcheck[:12000]}
+
                     Security Scan:
-                    %s
-                    """ % (cppcheck[:12000], security[:12000])
-                    
-                    payload = {
-                        "model": MODEL,
-                        "prompt": prompt,
-                        "stream": False
-                    }
-                    
-                    try:
+                    {security[:12000]}
+                    """
+
+
+                    def run_review():
+                        cppcheck = read_file("reports/cppcheck-report.txt")
+                        security = read_file("reports/security-patterns.txt")
+
+                        payload = {
+                            "model": MODEL,
+                            "prompt": build_prompt(cppcheck, security),
+                            "stream": False,
+                        }
+
                         req = urllib.request.Request(
                             OLLAMA_URL,
                             data=json.dumps(payload).encode("utf-8"),
-                            headers={"Content-Type": "application/json"}
+                            headers={"Content-Type": "application/json"},
                         )
-                    
-                        with urllib.request.urlopen(req, timeout=300) as response:
+
+                        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as response:
                             result = json.loads(response.read().decode("utf-8"))
-                    
-                        output = result.get("response", "")
-                    
-                    except Exception as e:
-                        output = "# AI Code and Security Review Report\\n\\n## AI Review Failed\\n\\nError:\\n\\n```text\\n%s\\n```\\n" % str(e)
-                    
-                    with open("reports/ai-code-security-review.md", "w") as f:
-                        f.write(output)
-                    
+
+                        output = result.get("response", "").strip()
+                        if not output:
+                            return failure_report("The Ollama API returned an empty response.")
+
+                        return output + "\\n"
+
+
+                    os.makedirs("reports", exist_ok=True)
+
+                    try:
+                        output = run_review()
+                    except Exception as exc:
+                        output = failure_report(str(exc))
+
+                    with open(REPORT_PATH, "w", encoding="utf-8") as handle:
+                        handle.write(output)
+
                     print(output)
                     PY
-        
-                    echo "===== RUNNING AI REVIEW ====="
-                    python3 ai_review.py || true
-        
+
                     echo "===== REPORT FILES ====="
                     ls -lh reports
-        
+
                     echo "===== AI REPORT ====="
-                    cat reports/ai-code-security-review.md || true
-                '''
+                    cat reports/ai-code-security-review.md
+                '''.stripIndent())
             }
         }
 
