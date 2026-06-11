@@ -88,7 +88,8 @@ pipeline {
 
         stage('Local AI Code and Security Review') {
             steps {
-                writeFile file: 'ai_review.py', text: '''import json
+                writeFile file: 'ai_review.py', text: '''\
+        import json
         import urllib.request
         import os
         
@@ -159,10 +160,15 @@ pipeline {
             f.write(output)
         
         print(output)
-        '''
+        '''.stripIndent()
         
                 sh '''
                     mkdir -p reports
+        
+                    echo "===== GENERATED PYTHON FILE ====="
+                    head -n 20 ai_review.py
+        
+                    echo "===== RUNNING AI REVIEW ====="
                     python3 ai_review.py
         
                     echo "===== REPORT FILES ====="
