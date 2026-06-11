@@ -104,7 +104,7 @@ OLLAMA_URL = os.environ.get(
 )
 MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
 REPORT_PATH = "reports/ai-code-security-review.md"
-TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "300"))
+TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "900"))
 
 
 def read_file(path):
@@ -154,10 +154,10 @@ Do not invent issues.
 Only use the scan results below.
 
 Cppcheck Report:
-{cppcheck[:12000]}
+{cppcheck[:4000]}
 
 Security Scan:
-{security[:12000]}
+{security[:4000]}
 """
 
 
