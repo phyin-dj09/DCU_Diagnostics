@@ -88,11 +88,7 @@ pipeline {
 
         stage('Local AI Code and Security Review') {
             steps {
-                sh '''
-                    mkdir -p reports
-        
-                    python3 -c '
-        import json
+                writeFile file: 'ai_review.py', text: '''import json
         import urllib.request
         import os
         
@@ -163,7 +159,11 @@ pipeline {
             f.write(output)
         
         print(output)
-                    '
+        '''
+        
+                sh '''
+                    mkdir -p reports
+                    python3 ai_review.py
         
                     echo "===== REPORT FILES ====="
                     ls -lh reports
