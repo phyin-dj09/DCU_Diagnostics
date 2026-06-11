@@ -89,14 +89,17 @@ pipeline {
         stage('Local AI Code and Security Review') {
             steps {
                 sh '''
-        mkdir -p reports
+                    mkdir -p reports
         
-        cat > ai_review.py <<'PY'
+                    python3 -c '
         import json
         import urllib.request
+        import os
         
         OLLAMA_URL = "http://192.168.11.129:11434/api/generate"
         MODEL = "qwen2.5-coder:7b"
+        
+        os.makedirs("reports", exist_ok=True)
         
         def read_file(path):
             try:
@@ -108,7 +111,7 @@ pipeline {
         cppcheck = read_file("reports/cppcheck-report.txt")
         security = read_file("reports/security-patterns.txt")
         
-        prompt = f"""
+        prompt = """
         You are a senior embedded Linux C security reviewer.
         
         Create a professional Markdown report.
@@ -129,19 +132,17 @@ pipeline {
         Only use the scan results below.
         
         Cppcheck Report:
-        {cppcheck[:12000]}
+        %s
         
         Security Scan:
-        {security[:12000]}
-        """
+        %s
+        """ % (cppcheck[:12000], security[:12000])
         
         payload = {
             "model": MODEL,
             "prompt": prompt,
             "stream": False
         }
-        
-        output = ""
         
         try:
             req = urllib.request.Request(
@@ -156,29 +157,19 @@ pipeline {
             output = result.get("response", "")
         
         except Exception as e:
-            output = f"""
-        # AI Code and Security Review Report
-        
-        ## AI Review Failed
-        
-        Error:
-        
-        {e}
-        """
+            output = "# AI Code and Security Review Report\\n\\n## AI Review Failed\\n\\nError:\\n\\n```text\\n%s\\n```\\n" % str(e)
         
         with open("reports/ai-code-security-review.md", "w") as f:
             f.write(output)
         
         print(output)
-        PY
+                    '
         
-        python3 ai_review.py
+                    echo "===== REPORT FILES ====="
+                    ls -lh reports
         
-        echo "===== REPORT FILES ====="
-        ls -lh reports
-        
-        echo "===== AI REPORT ====="
-        cat reports/ai-code-security-review.md || true
+                    echo "===== AI REPORT ====="
+                    cat reports/ai-code-security-review.md || true
                 '''
             }
         }
